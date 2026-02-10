@@ -2,21 +2,104 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Math vs Pocong: Zen Edition</title>
+    <title>Math vs Pocong - GitHub Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js"></script>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; }
-        canvas { display: block; margin: 0 auto; }
-        #ui-layer {
-            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-            width: 100%; max-width: 600px; pointer-events: none;
-        }
+        body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
     </style>
 </head>
 <body>
-    <div id="ui-layer">
-        </div>
-    <script src="src/game.js"></script>
+    <div id="game-container"></div>
+
+    <script>
+    // --- SCENE 1: BOOT ---
+    class BootScene extends Phaser.Scene {
+        constructor() { super('BootScene'); }
+        preload() {
+            let g = this.make.graphics({x: 0, y: 0, add: false});
+            g.fillStyle(0x1a1a1a); g.fillRect(0, 0, 800, 600); g.generateTexture('bg', 800, 600);
+            g.clear(); g.fillStyle(0xffffff); g.fillRect(0, 0, 50, 100); g.generateTexture('pocong', 50, 100);
+            g.clear(); g.fillStyle(0x2ecc71); g.fillRect(0, 0, 60, 60); g.generateTexture('hero', 60, 60);
+            g.clear(); g.fillStyle(0xff0000); g.fillRect(0, 0, 800, 600); g.generateTexture('ghost', 800, 600);
+            
+            this.load.image('flare', 'https://labs.phaser.io/assets/particles/white-flare.png');
+            this.add.text(400, 300, 'LOADING RITUAL...\nKLIK UNTUK MULAI', { align: 'center', fill: '#ff0000' }).setOrigin(0.5);
+        }
+        create() { this.input.on('pointerdown', () => this.scene.start('BattleScene')); }
+    }
+
+    // --- SCENE 2: BATTLE ---
+    class BattleScene extends Phaser.Scene {
+        constructor() { super('BattleScene'); this.userInput = ""; this.ans = 0; this.wrong = 0; }
+        
+        create() {
+            this.add.image(400, 300, 'bg');
+            this.player = this.add.sprite(150, 450, 'hero');
+            this.pocong = this.add.sprite(650, 450, 'pocong');
+            this.jump = this.add.image(400, 300, 'ghost').setAlpha(0).setDepth(100);
+            
+            this.emitter = this.add.particles(0, 0, 'flare', {
+                speed: 200, scale: { start: 0.5, end: 0 }, blendMode: 'ADD', emitting: false
+            });
+
+            this.uiSoal = this.add.text(400, 80, '', { font: 'bold 40px Arial', fill: '#fff' }).setOrigin(0.5);
+            this.uiInput = this.add.text(400, 150, '', { font: 'bold 50px Arial', fill: '#ffff00', backgroundColor: '#333' }).setOrigin(0.5);
+            
+            this.createPad();
+            this.newQuest();
+        }
+
+        createPad() {
+            const keys = ['1','2','3','4','5','6','7','8','9','DEL','0','ENT'];
+            keys.forEach((k, i) => {
+                let x = 300 + (i % 3) * 100;
+                let y = 250 + Math.floor(i / 3) * 60;
+                let b = this.add.text(x, y, k, { font: '24px Arial', backgroundColor: '#444', padding: 10, fixedWidth: 80, align: 'center' })
+                    .setInteractive({ useHandCursor: true })
+                    .on('pointerdown', () => this.handle(k));
+            });
+        }
+
+        handle(k) {
+            if(k === 'DEL') this.userInput = this.userInput.slice(0, -1);
+            else if(k === 'ENT') this.check();
+            else if(this.userInput.length < 5) this.userInput += k;
+            this.uiInput.setText(this.userInput);
+        }
+
+        newQuest() {
+            let a = Phaser.Math.Between(1, 10), b = Phaser.Math.Between(1, 10);
+            this.ans = a + b;
+            this.uiSoal.setText(`${a} + ${b} = ?`);
+            this.userInput = ""; this.uiInput.setText("");
+        }
+
+        check() {
+            if(parseInt(this.userInput) === this.ans) {
+                this.tweens.add({
+                    targets: this.player, x: 600, duration: 150, yoyo: true,
+                    onStart: () => { this.emitter.setPosition(this.player.x, this.player.y); this.emitter.start(); },
+                    onComplete: () => { this.emitter.stop(); this.cameras.main.shake(200, 0.02); this.newQuest(); }
+                });
+            } else {
+                this.wrong++;
+                if(this.wrong >= 3) {
+                    this.jump.setAlpha(1); this.cameras.main.shake(500, 0.05);
+                    setTimeout(() => { this.jump.setAlpha(0); this.wrong = 0; }, 800);
+                } else { this.cameras.main.flash(200, 100, 0, 0); }
+                this.userInput = ""; this.uiInput.setText("");
+            }
+        }
+    }
+
+    // --- CONFIG ---
+    const config = {
+        type: Phaser.AUTO,
+        width: 800, height: 600,
+        parent: 'game-container',
+        scene: [BootScene, BattleScene]
+    };
+    new Phaser.Game(config);
+    </script>
 </body>
 </html>
