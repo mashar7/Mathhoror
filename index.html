@@ -2,11 +2,11 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Math vs Pocong - Anti Stuck Edition</title>
+    <title>Math vs Pocong - Fixed Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js"></script>
     <style>
         body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
-        canvas { border: 4px solid #00ffcc; border-radius: 12px; }
+        canvas { border: 4px solid #00ffcc; border-radius: 12px; box-shadow: 0 0 30px rgba(0, 255, 204, 0.2); }
     </style>
 </head>
 <body>
@@ -17,16 +17,13 @@
         constructor() { super('BootScene'); }
         preload() {
             let g = this.make.graphics({x: 0, y: 0, add: false});
-            
-            // 1. Background
+            // Background
             g.fillStyle(0x0f172a); g.fillRect(0, 0, 800, 600); g.generateTexture('bg', 800, 600);
-            
-            // 2. Player, Musuh, Jumpscare
+            // Player, Musuh, Jumpscare
             g.clear(); g.fillStyle(0xffffff); g.fillRect(0, 0, 50, 100); g.generateTexture('pocong', 50, 100);
             g.clear(); g.fillStyle(0x2ecc71); g.fillRect(0, 0, 60, 60); g.generateTexture('hero', 60, 60);
             g.clear(); g.fillStyle(0xff0000); g.fillRect(0, 0, 800, 600); g.generateTexture('ghost', 800, 600);
-            
-            // 3. Flare Internal (PENTING: Agar tidak stuck jika internet mati)
+            // Partikel Internal
             g.clear(); g.fillStyle(0xffffff); g.fillCircle(10, 10, 10); g.generateTexture('flare_internal', 20, 20);
 
             this.add.text(400, 300, 'MEMULAI RITUAL...', { fill: '#00ffcc', font: '20px Arial' }).setOrigin(0.5);
@@ -47,10 +44,13 @@
             this.pocong = this.add.sprite(650, 450, 'pocong');
             this.jump = this.add.image(400, 300, 'ghost').setAlpha(0).setDepth(100);
             
-            // Partikel menggunakan tekstur internal
+            // Konfigurasi Partikel Phaser v3.60
             this.emitter = this.add.particles(0, 0, 'flare_internal', {
-                speed: { min: 100, max: 200 }, scale: { start: 1, end: 0 },
-                blendMode: 'ADD', lifespan: 500, emitting: false
+                speed: { min: 100, max: 250 },
+                scale: { start: 1, end: 0 },
+                blendMode: 'ADD',
+                lifespan: 500,
+                emitting: false
             });
 
             this.uiSoal = this.add.text(400, 70, '', { font: 'bold 45px Courier', fill: '#00ffcc' }).setOrigin(0.5);
@@ -80,7 +80,7 @@
         }
 
         newQuest() {
-            this.isLock = false; // Buka kunci
+            this.isLock = false; 
             let a = Phaser.Math.Between(1, 15), b = Phaser.Math.Between(1, 15);
             this.ans = a + b;
             this.uiSoal.setText(`${a} + ${b} = ?`);
@@ -96,11 +96,12 @@
 
         check() {
             if(this.userInput === "" || this.isLock) return;
-            this.isLock = true; // Kunci segera
+            this.isLock = true; 
 
             if(parseInt(this.userInput) === this.ans) {
                 this.combo++;
-                (this.combo >= 5) ? this.ultimateAttack() : this.normalAttack();
+                if(this.combo >= 5) this.ultimateAttack();
+                else this.normalAttack();
             } else {
                 this.handleWrong();
             }
@@ -110,7 +111,7 @@
             this.tweens.add({
                 targets: this.player, x: 600, duration: 180, yoyo: true,
                 onStart: () => { 
-                    this.emitter.setTint(0x00ffcc); 
+                    this.emitter.setParticleTint(0x00ffcc); // FIX: setParticleTint
                     this.emitter.setPosition(this.player.x, this.player.y); 
                     this.emitter.start(); 
                 },
@@ -128,7 +129,8 @@
             this.tweens.add({
                 targets: this.player, x: 650, scale: 2.5, duration: 300, yoyo: true,
                 onStart: () => { 
-                    this.emitter.setTint(0xffff00); this.emitter.start(); 
+                    this.emitter.setParticleTint(0xffff00); // FIX: setParticleTint
+                    this.emitter.start(); 
                     this.uiSoal.setText("JURUS PERNAPASAN!!!");
                 },
                 onComplete: () => { 
