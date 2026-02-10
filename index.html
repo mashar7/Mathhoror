@@ -2,11 +2,11 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Math vs Pocong - Fixed Edition</title>
+    <title>Math vs Pocong - Final Fix</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js"></script>
     <style>
-        body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: 'Courier New', Courier, monospace; }
-        canvas { border: 4px solid #334155; border-radius: 10px; }
+        body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        canvas { border: 4px solid #4ECDC4; border-radius: 15px; box-shadow: 0 0 20px rgba(78, 205, 196, 0.5); }
     </style>
 </head>
 <body>
@@ -17,14 +17,14 @@
         constructor() { super('BootScene'); }
         preload() {
             let g = this.make.graphics({x: 0, y: 0, add: false});
-            g.fillStyle(0x0f172a); g.fillRect(0, 0, 800, 600); g.generateTexture('bg', 800, 600);
+            g.fillStyle(0x1a1c2c); g.fillRect(0, 0, 800, 600); g.generateTexture('bg', 800, 600);
             g.clear(); g.fillStyle(0xffffff); g.fillRect(0, 0, 50, 100); g.generateTexture('pocong', 50, 100);
             g.clear(); g.fillStyle(0x2ecc71); g.fillRect(0, 0, 60, 60); g.generateTexture('hero', 60, 60);
             g.clear(); g.fillStyle(0xff0000); g.fillRect(0, 0, 800, 600); g.generateTexture('ghost', 800, 600);
             this.load.image('flare', 'https://labs.phaser.io/assets/particles/white-flare.png');
         }
         create() { 
-            this.add.text(400, 300, 'KLIK UNTUK MULAI', { font: 'bold 30px Arial', fill: '#00ffcc' }).setOrigin(0.5);
+            this.add.text(400, 300, 'SIAPKAN PERNAPASANMU!\nKLIK UNTUK MULAI', { font: 'bold 28px Arial', fill: '#4ECDC4', align: 'center' }).setOrigin(0.5);
             this.input.on('pointerdown', () => this.scene.start('BattleScene')); 
         }
     }
@@ -36,7 +36,6 @@
             this.ans = 0; 
             this.wrongCount = 0; 
             this.combo = 0; 
-            this.maxCombo = 5;
         }
         
         create() {
@@ -49,30 +48,25 @@
                 speed: 200, scale: { start: 0.8, end: 0 }, blendMode: 'ADD', emitting: false
             });
 
-            this.uiSoal = this.add.text(400, 60, '', { font: 'bold 45px Arial', fill: '#00ffcc' }).setOrigin(0.5);
-            this.uiInput = this.add.text(400, 140, '', { font: 'bold 55px Arial', fill: '#fff', backgroundColor: '#1e293b', padding: 15, fixedWidth: 250, align: 'center' }).setOrigin(0.5);
+            this.uiSoal = this.add.text(400, 80, '', { font: 'bold 40px Arial', fill: '#ffffff' }).setOrigin(0.5);
+            this.uiInput = this.add.text(400, 160, '', { font: 'bold 50px Arial', fill: '#FFE66D', backgroundColor: '#2F3E46', padding: 15, fixedWidth: 200, align: 'center' }).setOrigin(0.5);
             
-            this.comboBar = this.add.graphics();
+            this.bar = this.add.graphics();
             this.createPad();
             this.newQuest();
-        }
-
-        updateComboBar() {
-            this.comboBar.clear();
-            this.comboBar.fillStyle(0x333333);
-            this.comboBar.fillRect(300, 210, 200, 15);
-            this.comboBar.fillStyle(0x00ffcc);
-            this.comboBar.fillRect(300, 210, (this.combo / this.maxCombo) * 200, 15);
         }
 
         createPad() {
             const keys = ['1','2','3','4','5','6','7','8','9','DEL','0','ENT'];
             keys.forEach((k, i) => {
-                let x = 300 + (i % 3) * 105;
-                let y = 300 + Math.floor(i / 3) * 70;
-                let b = this.add.text(x, y, k, { font: 'bold 24px Arial', backgroundColor: '#334155', padding: 15, fixedWidth: 90, align: 'center', color: '#fff' })
+                let x = 300 + (i % 3) * 110;
+                let y = 320 + Math.floor(i / 3) * 70;
+                let btn = this.add.text(x, y, k, { font: 'bold 22px Arial', backgroundColor: '#4ECDC4', padding: 15, fixedWidth: 90, align: 'center' })
                     .setInteractive({ useHandCursor: true })
                     .on('pointerdown', () => this.handleKey(k));
+                
+                btn.on('pointerover', () => btn.setBackgroundColor('#FF6B6B'));
+                btn.on('pointerout', () => btn.setBackgroundColor('#4ECDC4'));
             });
         }
 
@@ -90,43 +84,52 @@
         newQuest() {
             let a = Phaser.Math.Between(1, 15);
             let b = Phaser.Math.Between(1, 15);
-            this.ans = a + b; // Simpan jawaban sebagai Number
+            this.ans = a + b;
             this.uiSoal.setText(`${a} + ${b} = ?`);
-            this.userInput = ""; 
+            this.userInput = "";
             this.uiInput.setText("");
-            this.updateComboBar();
+            this.updateBar();
+        }
+
+        updateBar() {
+            this.bar.clear();
+            this.bar.fillStyle(0x333333);
+            this.bar.fillRect(300, 230, 200, 15);
+            this.bar.fillStyle(0xff6b6b);
+            this.bar.fillRect(300, 230, (this.combo / 5) * 200, 15);
         }
 
         checkAnswer() {
-            if (this.userInput === "") return;
+            if (this.userInput === "" || this.isAnimating) return;
 
-            // Perbandingan ketat: ubah string input menjadi Number
             if (parseInt(this.userInput) === this.ans) {
                 this.combo++;
-                this.wrongCount = 0; // Reset hitungan salah jika benar
+                this.wrongCount = 0;
+                this.isAnimating = true; // Kunci input saat animasi jalan
                 
-                if (this.combo >= this.maxCombo) {
+                if (this.combo >= 5) {
                     this.ultimateAttack();
                 } else {
                     this.normalAttack();
                 }
             } else {
-                this.triggerError();
+                this.handleWrong();
             }
         }
 
         normalAttack() {
             this.tweens.add({
                 targets: this.player,
-                x: 600, duration: 200, yoyo: true,
+                x: 600, duration: 150, yoyo: true,
                 onStart: () => { 
-                    this.emitter.setTint(0x00ffcc); 
-                    this.emitter.setPosition(this.player.x, this.player.y); 
+                    this.emitter.setTint(0x4ECDC4);
+                    this.emitter.setPosition(this.player.x, this.player.y);
                     this.emitter.start(); 
                 },
                 onComplete: () => { 
                     this.emitter.stop(); 
-                    this.cameras.main.shake(150, 0.01); 
+                    this.cameras.main.shake(100, 0.01); 
+                    this.isAnimating = false;
                     this.newQuest(); 
                 }
             });
@@ -134,43 +137,41 @@
 
         ultimateAttack() {
             this.combo = 0;
-            this.cameras.main.flash(500, 255, 255, 255);
+            this.cameras.main.flash(400, 255, 255, 255);
             this.tweens.add({
                 targets: this.player,
-                x: 650, scale: 2.5, duration: 400, yoyo: true,
-                onStart: () => {
+                x: 650, scale: 2.5, duration: 300, yoyo: true,
+                onStart: () => { 
                     this.emitter.setTint(0xffff00); 
-                    this.emitter.start();
-                    this.uiSoal.setText("JURUS PERNAPASAN!!!");
+                    this.emitter.start(); 
                 },
-                onComplete: () => {
-                    this.emitter.stop();
-                    this.cameras.main.shake(600, 0.04);
+                onComplete: () => { 
+                    this.emitter.stop(); 
+                    this.cameras.main.shake(400, 0.03); 
                     this.player.setScale(1);
-                    this.newQuest();
+                    this.isAnimating = false;
+                    this.newQuest(); 
                 }
             });
         }
 
-        triggerError() {
+        handleWrong() {
             this.wrongCount++;
-            this.combo = 0; // Combo reset saat salah
+            this.combo = 0;
+            this.updateBar();
             
             if (this.wrongCount >= 3) {
-                // JUMPSCARE
                 this.jump.setAlpha(1);
-                this.cameras.main.shake(500, 0.05);
+                this.cameras.main.shake(500, 0.04);
                 this.time.delayedCall(800, () => { 
                     this.jump.setAlpha(0); 
                     this.wrongCount = 0; 
                     this.newQuest();
                 });
             } else {
-                // Efek salah biasa
-                this.cameras.main.flash(300, 150, 0, 0);
+                this.cameras.main.flash(200, 150, 0, 0);
                 this.userInput = "";
                 this.uiInput.setText("");
-                this.updateComboBar();
             }
         }
     }
